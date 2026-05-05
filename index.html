@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Яка ти мама?</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --coral: #D85A30;
+    --coral-dark: #993C1D;
+    --coral-light: #FAECE7;
+    --coral-border: #F5C4B3;
+    --green-bg: #EAF3DE;
+    --green-border: #97C459;
+    --green-text: #27500A;
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    min-height: 100vh;
+    font-family: -apple-system, 'Segoe UI', system-ui, Arial, sans-serif;
+    font-size: 16px;
+    background: var(--tg-theme-bg-color, #fff);
+    color: var(--tg-theme-text-color, #1a1a1a);
+  }
+
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+  }
+
+  /* ---- SCREENS ---- */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ---- INTRO ---- */
+  .intro-card {
+    background: var(--coral-light);
+    border: 1.5px solid var(--coral-border);
+    border-radius: var(--radius);
+    padding: 32px 20px;
+    text-align: center;
+    margin-top: 8px;
+  }
+  .intro-icon { font-size: 56px; line-height: 1; margin-bottom: 16px; }
+  .intro-title { font-size: 22px; font-weight: 800; color: #712B13; line-height: 1.3; margin-bottom: 10px; }
+  .intro-sub { font-size: 14px; color: #993C1D; line-height: 1.6; margin-bottom: 20px; opacity: 0.9; }
+  .badge-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+  .badge {
+    background: #fff;
+    border: 1px solid var(--coral-border);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 12px;
+    color: var(--coral-dark);
+    font-weight: 700;
+  }
+  .disclaimer {
+    font-size: 11px;
+    color: #993C1D;
+    opacity: 0.6;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  /* ---- BUTTONS ---- */
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s, transform 0.1s;
+    text-align: center;
+  }
+  .btn:active { transform: scale(0.97); opacity: 0.85; }
+  .btn-primary { background: var(--coral); color: #fff; }
+  .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-outline {
+    background: transparent;
+    border: 1.5px solid #ccc;
+    color: #888;
+    padding: 13px;
+    font-size: 15px;
+  }
+
+  /* ---- PROGRESS ---- */
+  .progress-area { margin-bottom: 20px; }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 8px;
+  }
+  .progress-bg { background: #f0d5c8; border-radius: 8px; height: 7px; overflow: hidden; }
+  .progress-fill { background: var(--coral); height: 100%; border-radius: 8px; transition: width 0.4s ease; }
+
+  /* ---- BLOCK LABEL ---- */
+  .block-label {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+  }
+  .label-care { background: var(--green-bg); color: var(--green-text); }
+  .label-control { background: var(--coral-light); color: var(--coral-dark); }
+
+  /* ---- QUESTION ---- */
+  .q-text {
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 24px;
+    color: var(--tg-theme-text-color, #1a1a1a);
+  }
+
+  /* ---- OPTIONS ---- */
+  .scale-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 10px;
+    padding: 0 2px;
+  }
+  .options-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+  .opt {
+    flex: 1;
+    background: #f5f5f5;
+    border: 2px solid transparent;
+    border-radius: 14px;
+    padding: 12px 4px;
+    cursor: pointer;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .opt:active { transform: scale(0.94); }
+  .opt.sel { background: var(--coral); border-color: var(--coral); }
+  .opt-num { font-size: 20px; font-weight: 800; color: #333; }
+  .opt.sel .opt-num { color: #fff; }
+  .opt-lbl { font-size: 9px; color: #999; line-height: 1.3; }
+  .opt.sel .opt-lbl { color: rgba(255,255,255,0.85); }
+
+  /* ---- NAV ---- */
+  .q-nav { display: flex; gap: 10px; align-items: center; }
+  .btn-prev {
+    background: transparent;
+    border: 1.5px solid #ddd;
+    color: #999;
+    border-radius: 50px;
+    padding: 14px 18px;
+    font-size: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .btn-prev:active { border-color: var(--coral); color: var(--coral); }
+  .btn-next-q {
+    flex: 1;
+    background: var(--coral);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-next-q:disabled { background: #ddd; cursor: not-allowed; }
+  .btn-next-q:active:not(:disabled) { opacity: 0.85; transform: scale(0.98); }
+
+  /* ---- TRANSITION ---- */
+  .trans-card {
+    background: var(--green-bg);
+    border: 1.5px solid var(--green-border);
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .trans-icon { font-size: 48px; margin-bottom: 12px; }
+  .trans-card h2 { font-size: 20px; font-weight: 800; color: var(--green-text); margin-bottom: 8px; }
+  .trans-card p { font-size: 14px; color: var(--green-text); opacity: 0.85; line-height: 1.5; }
+
+  /* ---- RESULT ---- */
+  .result-card {
+    border-radius: var(--radius);
+    border: 2px solid;
+    padding: 28px 20px;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .result-emoji { font-size: 60px; line-height: 1; margin-bottom: 12px; }
+  .result-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.6;
+    margin-bottom: 6px;
+  }
+  .result-title { font-size: 28px; font-weight: 800; margin-bottom: 14px; line-height: 1.2; }
+  .result-desc { font-size: 14px; line-height: 1.7; opacity: 0.88; margin-bottom: 18px; }
+  .scores-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .score-pill {
+    background: rgba(255,255,255,0.5);
+    border-radius: 50px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .tip-box {
+    background: rgba(255,255,255,0.5);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.65;
+    text-align: left;
+    margin-bottom: 6px;
+  }
+  .tg-link {
+    display: block;
+    margin-top: 16px;
+    padding: 14px;
+    background: #229ED9;
+    color: #fff;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 15px;
+    text-decoration: none;
+    text-align: center;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    width: 100%;
+    transition: opacity 0.15s;
+  }
+  .tg-link:active { opacity: 0.85; }
+  .btn-retry {
+    margin-top: 10px;
+    background: transparent;
+    border: 1.5px solid rgba(0,0,0,0.15);
+    border-radius: 50px;
+    padding: 13px;
+    font-size: 14px;
+    font-weight: 600;
+    color: inherit;
+    cursor: pointer;
+    width: 100%;
+    font-family: inherit;
+    opacity: 0.65;
+    transition: opacity 0.15s;
+  }
+  .btn-retry:active { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- INTRO -->
+  <div class="screen active" id="s-intro">
+    <div class="intro-card">
+      <div class="intro-icon">&#127800;</div>
+      <h1 class="intro-title">&#1071;&#1082;&#1086;&#1102; &#1084;&#1072;&#1084;&#1086;&#1102; &#1090;&#1077;&#1073;&#1077; &#1074;&#1110;&#1076;&#1095;&#1091;&#1074;&#1072;&#1108; &#1090;&#1074;&#1086;&#1103; &#1076;&#1080;&#1090;&#1080;&#1085;&#1072;?</h1>
+      <p class="intro-sub">&#1058;&#1077;&#1089;&#1090; &#1085;&#1072; &#1086;&#1089;&#1085;&#1086;&#1074;&#1110; Parental Bonding Instrument. &#1044;&#1110;&#1079;&#1085;&#1072;&#1081;&#1089;&#1103; &#1089;&#1074;&#1110;&#1081; &#1089;&#1090;&#1080;&#1083;&#1100; &#1074;&#1080;&#1093;&#1086;&#1074;&#1072;&#1085;&#1085;&#1103; &#1110; &#1073;&#1091;&#1076;&#1100; &#1082;&#1088;&#1072;&#1097;&#1086;&#1102; &#1084;&#1072;&#1084;&#1086;&#1102;.</p>
+      <div class="badge-row">
+        <span class="badge">20 &#1079;&#1072;&#1087;&#1080;&#1090;&#1072;&#1085;&#1100;</span>
+        <span class="badge">~5 &#1093;&#1074;&#1080;&#1083;&#1080;&#1085;</span>
+        <span class="badge">9 &#1090;&#1080;&#1087;&#1110;&#1074; &#1084;&#1072;&#1084;</span>
+      </div>
+      <p class="disclaimer">&#1058;&#1077;&#1089;&#1090; &#1085;&#1077; &#1108; &#1082;&#1083;&#1110;&#1085;&#1110;&#1095;&#1085;&#1086;&#1102; &#1076;&#1110;&#1072;&#1075;&#1085;&#1086;&#1089;&#1090;&#1080;&#1082;&#1086;&#1102;</p>
+      <button class="btn btn-primary" id="btn-start">&#1055;&#1086;&#1095;&#1072;&#1090;&#1080; &#10024;</button>
+    </div>
+  </div>
+
+  <!-- QUESTION -->
+  <div class="screen" id="s-question">
+    <div class="progress-area">
+      <div class="progress-meta">
+        <span id="q-counter"></span>
+        <span id="block-ind"></span>
+      </div>
+      <div class="progress-bg">
+        <div class="progress-fill" id="pfill" style="width:5%"></div>
+      </div>
+    </div>
+    <div id="blabel" class="block-label label-care"></div>
+    <p class="q-text" id="qtext"></p>
+    <div class="scale-labels">
+      <span>&#1047;&#1086;&#1074;&#1089;&#1110;&#1084; &#1085;&#1077; &#1087;&#1088;&#1086; &#1084;&#1077;&#1085;&#1077;</span>
+      <span>&#1044;&#1091;&#1078;&#1077; &#1087;&#1088;&#1086; &#1084;&#1077;&#1085;&#1077;</span>
+    </div>
+    <div class="options-row" id="opts"></div>
+    <div class="q-nav">
+      <button class="btn-prev" id="bprev">&#8592;</button>
+      <button class="btn-next-q" id="bnext" disabled>&#1044;&#1072;&#1083;&#1110; &#8594;</button>
+    </div>
+  </div>
+
+  <!-- TRANSITION -->
+  <div class="screen" id="s-trans">
+    <div class="trans-card">
+      <div class="trans-icon">&#127881;</div>
+      <h2>&#1042;&#1110;&#1076;&#1084;&#1110;&#1085;&#1085;&#1086;! &#1055;&#1086;&#1083;&#1086;&#1074;&#1080;&#1085;&#1091; &#1087;&#1088;&#1086;&#1081;&#1076;&#1077;&#1085;&#1086;</h2>
+      <p>&#1055;&#1077;&#1088;&#1096;&#1080;&#1081; &#1073;&#1083;&#1086;&#1082; &#8212; &#1058;&#1091;&#1088;&#1073;&#1086;&#1090;&#1072; &#8212; &#1075;&#1086;&#1090;&#1086;&#1074;&#1080;&#1081;.<br>&#1058;&#1077;&#1087;&#1077;&#1088; &#1073;&#1083;&#1086;&#1082; &#1087;&#1088;&#1086; &#1088;&#1110;&#1074;&#1077;&#1085;&#1100; &#1082;&#1086;&#1085;&#1090;&#1088;&#1086;&#1083;&#1102;.</p>
+    </div>
+    <button class="btn btn-primary" id="btn-cont">&#1055;&#1088;&#1086;&#1076;&#1086;&#1074;&#1078;&#1080;&#1090;&#1080; &#8594;</button>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="s-result">
+    <div class="result-card" id="rcard">
+      <div class="result-emoji" id="remoji"></div>
+      <div class="result-badge" id="rbadge">&#1058;&#1074;&#1110;&#1081; &#1090;&#1080;&#1087;</div>
+      <div class="result-title" id="rtitle"></div>
+      <p class="result-desc" id="rdesc"></p>
+      <div class="scores-row">
+        <div class="score-pill" id="sc1"></div>
+        <div class="score-pill" id="sc2"></div>
+      </div>
+      <div class="tip-box" id="rtip"></div>
+      <!-- ЗАМІНИТИ посилання нижче на своє Telegram-посилання -->
+      <a class="tg-link" href="https://t.me/YOUR_CHANNEL" id="tg-btn">
+        &#128148; &#1054;&#1087;&#1080;&#1089; &#1090;&#1074;&#1086;&#1075;&#1086; &#1090;&#1080;&#1087;&#1091; &#8212; &#1091; &#1082;&#1072;&#1085;&#1072;&#1083;&#1110;
+      </a>
+    </div>
+    <button class="btn-retry" id="btn-retry">&#1055;&#1088;&#1086;&#1081;&#1090;&#1080; &#1097;&#1077; &#1088;&#1072;&#1079;</button>
+  </div>
+
+</div>
+
+<script>
+// ---- TELEGRAM WEB APP INIT ----
+var tg = window.Telegram && window.Telegram.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+}
+
+// ---- DATA ----
+var Qs = [
+  {t:"\u0414\u0438\u0442\u0438\u043d\u0430 \u043c\u043e\u0436\u0435 \u043f\u0440\u0438\u0439\u0442\u0438 \u0434\u043e \u043c\u0435\u043d\u0435 \u0437\u0456 \u0441\u0432\u043e\u0457\u043c\u0438 \u043f\u0435\u0440\u0435\u0436\u0438\u0432\u0430\u043d\u043d\u044f\u043c\u0438",b:"care"},
+  {t:"\u042f \u0441\u0442\u0430\u0440\u0430\u044e\u0441\u044f \u0437\u0440\u043e\u0437\u0443\u043c\u0456\u0442\u0438 \u0457\u0457 \u043f\u043e\u0447\u0443\u0442\u0442\u044f, \u043d\u0430\u0432\u0456\u0442\u044c \u044f\u043a\u0449\u043e \u043d\u0435 \u043f\u043e\u0433\u043e\u0434\u0436\u0443\u044e\u0441\u044c",b:"care"},
+  {t:"\u042f \u043f\u0456\u0434\u0442\u0440\u0438\u043c\u0443\u044e \u0434\u0438\u0442\u0438\u043d\u0443, \u043a\u043e\u043b\u0438 \u0432\u043e\u043d\u0430 \u043f\u043e\u043c\u0438\u043b\u044f\u0454\u0442\u044c\u0441\u044f",b:"care"},
+  {t:"\u042f \u0432\u0456\u0434\u043a\u0440\u0438\u0442\u043e \u043f\u0440\u043e\u044f\u0432\u043b\u044f\u044e \u0442\u0435\u043f\u043b\u043e (\u0441\u043b\u043e\u0432\u0430\u043c\u0438, \u0434\u043e\u0442\u0438\u043a\u043e\u043c, \u043f\u043e\u0433\u043b\u044f\u0434\u043e\u043c)",b:"care"},
+  {t:"\u041c\u043e\u044f \u0434\u0438\u0442\u0438\u043d\u0430 \u0437\u043d\u0430\u0454, \u0449\u043e \u044f \u0457\u0457 \u043f\u0440\u0438\u0439\u043c\u0430\u044e \u0431\u0435\u0437 \u0443\u043c\u043e\u0432",b:"care"},
+  {t:"\u042f \u043c\u043e\u0436\u0443 \u0437\u0430\u043b\u0438\u0448\u0430\u0442\u0438\u0441\u044f \u043f\u043e\u0440\u0443\u0447, \u043a\u043e\u043b\u0438 \u0434\u0438\u0442\u0438\u043d\u0430 \u0437\u043b\u0438\u0442\u044c\u0441\u044f \u0430\u0431\u043e \u043f\u043b\u0430\u0447\u0435",b:"care"},
+  {t:"\u042f \u043d\u0435 \u0432\u0438\u0441\u043c\u0456\u044e\u044e \u0457\u0457 \u0441\u0442\u0440\u0430\u0445\u0438 \u0447\u0438 \u0441\u043b\u0430\u0431\u043a\u043e\u0441\u0442\u0456",b:"care"},
+  {t:"\u042f \u0446\u0456\u043a\u0430\u0432\u043b\u044e\u0441\u044c \u0457\u0457 \u0432\u043d\u0443\u0442\u0440\u0456\u0448\u043d\u0456\u043c \u0441\u0432\u0456\u0442\u043e\u043c, \u0430 \u043d\u0435 \u043b\u0438\u0448\u0435 \u043f\u043e\u0432\u0435\u0434\u0456\u043d\u043a\u043e\u044e",b:"care"},
+  {t:"\u042f \u043f\u043e\u043c\u0456\u0447\u0430\u044e \u0457\u0457 \u0437\u0443\u0441\u0438\u043b\u043b\u044f, \u0430 \u043d\u0435 \u0442\u0456\u043b\u044c\u043a\u0438 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442",b:"care"},
+  {t:"\u042f \u0437\u0434\u0430\u0442\u043d\u0430 \u0432\u0438\u0431\u0430\u0447\u0438\u0442\u0438\u0441\u044f \u043f\u0435\u0440\u0435\u0434 \u0434\u0438\u0442\u0438\u043d\u043e\u044e",b:"care"},
+  {t:"\u042f \u0447\u0430\u0441\u0442\u043e \u0445\u0432\u0438\u043b\u044e\u044e\u0441\u044f \u0437\u0430 \u0434\u0438\u0442\u0438\u043d\u0443 \u043d\u0430\u0432\u0456\u0442\u044c \u0443 \u0431\u0435\u0437\u043f\u0435\u0447\u043d\u0438\u0445 \u0441\u0438\u0442\u0443\u0430\u0446\u0456\u044f\u0445",b:"control"},
+  {t:"\u041c\u0435\u043d\u0456 \u0441\u043a\u043b\u0430\u0434\u043d\u043e \u0434\u043e\u0437\u0432\u043e\u043b\u0438\u0442\u0438 \u0457\u0439 \u0441\u0430\u043c\u043e\u0441\u0442\u0456\u0439\u043d\u043e \u043f\u0440\u0438\u0439\u043c\u0430\u0442\u0438 \u0440\u0456\u0448\u0435\u043d\u043d\u044f",b:"control"},
+  {t:"\u042f \u0432\u0456\u0434\u0447\u0443\u0432\u0430\u044e \u043f\u043e\u0442\u0440\u0435\u0431\u0443 \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u044f\u0442\u0438 \u0430\u0431\u043e \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044e\u0432\u0430\u0442\u0438 \u0434\u0435\u0442\u0430\u043b\u0456 \u0457\u0457 \u0436\u0438\u0442\u0442\u044f",b:"control"},
+  {t:"\u042f \u0447\u0430\u0441\u0442\u043e \u043f\u0456\u0434\u043a\u0430\u0437\u0443\u044e, \u044f\u043a \u00ab\u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u043e\u00bb",b:"control"},
+  {t:"\u042f \u0431\u043e\u044e\u0441\u044f, \u0449\u043e \u0431\u0435\u0437 \u043c\u0435\u043d\u0435 \u0434\u0438\u0442\u0438\u043d\u0430 \u043d\u0435 \u0432\u043f\u043e\u0440\u0430\u0454\u0442\u044c\u0441\u044f",b:"control"},
+  {t:"\u042f \u0432\u0430\u0436\u043a\u043e \u043f\u0435\u0440\u0435\u043d\u043e\u0448\u0443 \u0457\u0457 \u043f\u043e\u043c\u0438\u043b\u043a\u0438",b:"control"},
+  {t:"\u041c\u0435\u043d\u0456 \u0441\u043a\u043b\u0430\u0434\u043d\u043e \u0434\u043e\u0437\u0432\u043e\u043b\u0438\u0442\u0438 \u0457\u0439 \u0437\u0456\u0442\u043a\u043d\u0443\u0442\u0438\u0441\u044f \u0437 \u043d\u0430\u0441\u043b\u0456\u0434\u043a\u0430\u043c\u0438",b:"control"},
+  {t:"\u042f \u0448\u0432\u0438\u0434\u043a\u043e \u0432\u0442\u0440\u0443\u0447\u0430\u044e\u0441\u044c, \u044f\u043a\u0449\u043e \u0431\u0430\u0447\u0443 \u0442\u0440\u0443\u0434\u043d\u043e\u0449\u0456",b:"control"},
+  {t:"\u042f \u043e\u0447\u0456\u043a\u0443\u044e, \u0449\u043e \u0434\u0438\u0442\u0438\u043d\u0430 \u0432\u0456\u0434\u043f\u043e\u0432\u0456\u0434\u0430\u0442\u0438\u043c\u0435 \u043c\u043e\u0457\u043c \u0443\u044f\u0432\u043b\u0435\u043d\u043d\u044f\u043c",b:"control"},
+  {t:"\u042f \u0432\u0456\u0434\u0447\u0443\u0432\u0430\u044e \u0442\u0440\u0438\u0432\u043e\u0433\u0443, \u043a\u043e\u043b\u0438 \u0432\u0442\u0440\u0430\u0447\u0430\u044e \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044c \u043d\u0430\u0434 \u0441\u0438\u0442\u0443\u0430\u0446\u0456\u0454\u044e",b:"control"}
+];
+
+var SL=["\u0417\u043e\u0432\u0441\u0456\u043c \u043d\u0456","\u0421\u043a\u043e\u0440\u0456\u0448\u0435 \u043d\u0456","\u0427\u0430\u0441\u0442\u043a\u043e\u0432\u043e","\u0421\u043a\u043e\u0440\u0456\u0448\u0435 \u0442\u0430\u043a","\u0414\u0443\u0436\u0435 \u0442\u0430\u043a"];
+
+var R={
+  "high-low":{e:"\uD83E\uDDED",t:"\u041c\u0430\u043c\u0430-\u043a\u043e\u043c\u043f\u0430\u0441",d:"\u0422\u0438 \u2014 \u043d\u0430\u0434\u0456\u0439\u043d\u0430 \u0456 \u0442\u0435\u043f\u043b\u0430. \u0414\u0456\u0442\u0438 \u043f\u043e\u0440\u0443\u0447 \u0437 \u0442\u043e\u0431\u043e\u044e \u043f\u043e\u0447\u0443\u0432\u0430\u044e\u0442\u044c\u0441\u044f \u0431\u0435\u0437\u043f\u0435\u0447\u043d\u043e \u0456 \u0432\u0456\u043b\u044c\u043d\u043e. \u0412\u0438\u0441\u043e\u043a\u0430 \u0442\u0443\u0440\u0431\u043e\u0442\u0430 \u0431\u0435\u0437 \u0437\u0430\u0439\u0432\u043e\u0433\u043e \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044e \u2014 \u0446\u0435 \u0437\u043e\u043b\u043e\u0442\u0438\u0439 \u0431\u0430\u043b\u0430\u043d\u0441.",tip:"\u2728 \u0422\u0432\u043e\u044f \u0441\u0438\u043b\u0430: \u0434\u0438\u0442\u0438\u043d\u0430 \u0432\u0456\u0434\u0447\u0443\u0432\u0430\u0454 \u043f\u0440\u0438\u0439\u043d\u044f\u0442\u0442\u044f \u0456 \u043f\u0440\u043e\u0441\u0442\u0456\u0440 \u0434\u043b\u044f \u0437\u0440\u043e\u0441\u0442\u0430\u043d\u043d\u044f. \u041f\u0440\u043e\u0434\u043e\u0432\u0436\u0443\u0439 \u0434\u043e\u0432\u0456\u0440\u044f\u0442\u0438 \u0457\u0439!",bg:"#EAF3DE",bc:"#97C459",fc:"#27500A"},
+  "high-mid":{e:"\uD83E\uDD1D",t:"\u041c\u0430\u043c\u0430-\u0434\u0438\u043f\u043b\u043e\u043c\u0430\u0442",d:"\u0422\u0438 \u0442\u0435\u043f\u043b\u0430, \u0443\u0432\u0430\u0436\u043d\u0430 \u0456 \u0434\u0431\u0430\u0439\u043b\u0438\u0432\u0430. \u0406\u043d\u043e\u0434\u0456 \u0442\u0440\u0430\u043f\u043b\u044f\u0454\u0442\u044c\u0441\u044f \u0437\u0430\u0439\u0432\u0435 \u0445\u0432\u0438\u043b\u044e\u0432\u0430\u043d\u043d\u044f \u2014 \u0430\u043b\u0435 \u0446\u0435 \u0432\u0456\u0434 \u043b\u044e\u0431\u043e\u0432\u0456. \u0422\u0438 \u0448\u0443\u043a\u0430\u0454\u0448 \u0431\u0430\u043b\u0430\u043d\u0441.",tip:"\uD83D\uDCA1 \u041a\u043e\u043b\u0438 \u0432\u0438\u043d\u0438\u043a\u0430\u0454 \u0431\u0430\u0436\u0430\u043d\u043d\u044f \u0432\u0442\u0440\u0443\u0442\u0438\u0442\u0438\u0441\u044c \u2014 \u0437\u0440\u043e\u0431\u0438 \u043f\u0430\u0443\u0437\u0443. \u0427\u0430\u0441\u0442\u043e \u0434\u0438\u0442\u0438\u043d\u0430 \u0432\u043f\u043e\u0440\u0430\u0454\u0442\u044c\u0441\u044f \u0441\u0430\u043c\u0430.",bg:"#E6F1FB",bc:"#85B7EB",fc:"#0C447C"},
+  "high-high":{e:"\uD83D\uDC23",t:"\u041c\u0430\u043c\u0430-\u043d\u0430\u0441\u0456\u0434\u043a\u0430",d:"\u0422\u0438 \u0434\u0443\u0436\u0435 \u043b\u044e\u0431\u0438\u0448 \u0441\u0432\u043e\u044e \u0434\u0438\u0442\u0438\u043d\u0443 \u0456 \u0445\u043e\u0447\u0435\u0448 \u0437\u0430\u0445\u0438\u0441\u0442\u0438\u0442\u0438 \u0457\u0457 \u0432\u0456\u0434 \u0432\u0441\u044c\u043e\u0433\u043e. \u0422\u0432\u043e\u044f \u0442\u0443\u0440\u0431\u043e\u0442\u0430 \u0449\u0438\u0440\u0430, \u0430\u043b\u0435 \u0437\u0430\u043d\u0430\u0434\u0442\u043e \u0449\u0456\u043b\u044c\u043d\u0438\u0439 \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u044c \u0437\u0430\u0432\u0430\u0436\u0430\u0454 \u0431\u0443\u0434\u0443\u0432\u0430\u0442\u0438 \u0432\u043f\u0435\u0432\u043d\u0435\u043d\u0456\u0441\u0442\u044c \u0434\u0438\u0442\u0438\u043d\u0438.",tip:"\uD83D\uDCA1 \u0429\u043e\u0442\u0438\u0436\u043d\u044f \u0434\u0430\u0432\u0430\u0439 \u0434\u0438\u0442\u0438\u043d\u0456 \u043e\u0434\u043d\u0435 \u0437\u0430\u0432\u0434\u0430\u043d\u043d\u044f \u0431\u0435\u0437 \u0442\u0432\u043e\u0454\u0457 \u0434\u043e\u043f\u043e\u043c\u043e\u0433\u0438. \u0414\u043e\u0437\u0432\u043e\u043b\u044c \u0457\u0439 \u043f\u043e\u043c\u0438\u043b\u0438\u0442\u0438\u0441\u044c \u2014 \u0432\u043e\u043d\u0430 \u0432\u043f\u043e\u0440\u0430\u0454\u0442\u044c\u0441\u044f.",bg:"#FBEAF0",bc:"#ED93B1",fc:"#72243E"},
+  "mid-low":{e:"\uD83D\uDC6F",t:"\u041c\u0430\u043c\u0430-\u043f\u043e\u0434\u0440\u0443\u0433\u0430",d:"\u0422\u0438 \u043b\u0435\u0433\u043a\u0430, \u0432\u0456\u0434\u043a\u0440\u0438\u0442\u0430 \u0456 \u0431\u043b\u0438\u0437\u044c\u043a\u0430. \u0406\u043d\u043e\u0434\u0456 \u043d\u0435 \u0432\u0438\u0441\u0442\u0430\u0447\u0430\u0454 \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0438 \u0456 \u043c\u0435\u0436. \u0410\u043b\u0435 \u0432\u0430\u0448\u0456 \u0441\u0442\u043e\u0441\u0443\u043d\u043a\u0438 \u0442\u0435\u043f\u043b\u0456 \u0456 \u0434\u043e\u0432\u0456\u0440\u043b\u0438\u0432\u0456.",tip:"\uD83D\uDCA1 \u0414\u0456\u0442\u0438 \u043f\u043e\u0442\u0440\u0435\u0431\u0443\u044e\u0442\u044c \u043d\u0435 \u043b\u0438\u0448\u0435 \u043f\u043e\u0434\u0440\u0443\u0433\u0438, \u0430\u043b\u0435 \u0439 \u043e\u0440\u0456\u0454\u043d\u0442\u0438\u0440\u0430. \u0413\u043e\u0432\u043e\u0440\u0438 \u0447\u0430\u0441\u0442\u0456\u0448\u0435 \u043f\u0440\u043e \u0446\u0456\u043d\u043d\u043e\u0441\u0442\u0456 \u0442\u0430 \u043c\u0435\u0436\u0456.",bg:"#EEEDFE",bc:"#AFA9EC",fc:"#3C3489"},
+  "mid-mid":{e:"\uD83D\uDCCB",t:"\u041c\u0430\u043c\u0430-\u043c\u0435\u043d\u0435\u0434\u0436\u0435\u0440",d:"\u0422\u0438 \u043e\u0440\u0433\u0430\u043d\u0456\u0437\u043e\u0432\u0430\u043d\u0430, \u0434\u0431\u0430\u0439\u043b\u0438\u0432\u0430 \u0456 \u043f\u0440\u0430\u0433\u043c\u0430\u0442\u0438\u0447\u043d\u0430. \u0406\u043d\u043e\u0434\u0456 \u0432 \u0441\u0442\u043e\u0441\u0443\u043d\u043a\u0430\u0445 \u0437\u0430\u043c\u0430\u043b\u043e \u043f\u0440\u043e\u0441\u0442\u043e\u0433\u043e \u0442\u0435\u043f\u043b\u0430 \u2014 \u0431\u0435\u0437 \u0443\u043c\u043e\u0432 \u0456 \u0437\u0430\u0432\u0434\u0430\u043d\u044c.",tip:"\uD83D\uDCA1 10 \u0445\u0432\u0438\u043b\u0438\u043d \u043d\u0430 \u0434\u0435\u043d\u044c \u0434\u043b\u044f \u043e\u0431\u0456\u0439\u043c\u0456\u0432 \u0456 \u0440\u043e\u0437\u043c\u043e\u0432\u0438 \u0431\u0435\u0437 \u043c\u0435\u0442\u0438. \u0426\u0435 \u0436\u0438\u0432\u0438\u0442\u044c \u0437\u0432\u02b9\u044f\u0437\u043e\u043a.",bg:"#FAEEDA",bc:"#EF9F27",fc:"#633806"},
+  "mid-high":{e:"\uD83D\uDCDA",t:"\u041c\u0430\u043c\u0430-\u0432\u0447\u0438\u0442\u0435\u043b\u044c\u043a\u0430",d:"\u0422\u0438 \u0445\u043e\u0447\u0435\u0448 \u0434\u0430\u0442\u0438 \u0434\u0438\u0442\u0438\u043d\u0456 \u043d\u0430\u0439\u043a\u0440\u0430\u0449\u0435. \u0406\u043d\u043e\u0434\u0456 \u0432\u0447\u0438\u0442\u0435\u043b\u044c \u0432 \u0442\u043e\u0431\u0456 \u043f\u0435\u0440\u0435\u043c\u0430\u0433\u0430\u0454 \u043c\u0430\u043c\u0438\u043d\u0435 \u0441\u0435\u0440\u0446\u0435. \u0414\u0438\u0442\u0438\u043d\u0430 \u043c\u043e\u0436\u0435 \u0432\u0456\u0434\u0447\u0443\u0432\u0430\u0442\u0438 \u0442\u0438\u0441\u043a.",tip:"\uD83D\uDCA1 \u0417\u0430\u043f\u0438\u0442\u0430\u0439 \u0441\u0435\u0431\u0435: \u044f \u0437\u0430\u0440\u0430\u0437 \u043d\u0430\u0432\u0447\u0430\u044e \u0447\u0438 \u043f\u0440\u0438\u0439\u043c\u0430\u044e? \u0414\u0438\u0442\u0438\u043d\u0430 \u0437\u0440\u043e\u0441\u0442\u0430\u0454 \u0447\u0435\u0440\u0435\u0437 \u043f\u0440\u0438\u0439\u043d\u044f\u0442\u0442\u044f.",bg:"#EAF3DE",bc:"#639922",fc:"#27500A"},
+  "low-low":{e:"\uD83C\uDF3F",t:"\u041c\u0430\u043c\u0430-\u0431\u0435\u0437 \u0434\u0440\u0430\u043c",d:"\u0422\u0438 \u0441\u043f\u043e\u043a\u0456\u0439\u043d\u0430 \u0456 \u043d\u0435 \u0441\u0445\u0438\u043b\u044c\u043d\u0430 \u0434\u043e \u0442\u0440\u0438\u0432\u043e\u0433. \u041c\u043e\u0436\u043b\u0438\u0432\u043e, \u0434\u0438\u0442\u0438\u043d\u0456 \u0456\u043d\u043e\u0434\u0456 \u0431\u0440\u0430\u043a\u0443\u0454 \u0435\u043c\u043e\u0446\u0456\u0439\u043d\u043e\u0457 \u0431\u043b\u0438\u0437\u044c\u043a\u043e\u0441\u0442\u0456.",tip:"\uD83D\uDCA1 \u0421\u043f\u0440\u043e\u0431\u0443\u0439 \u0447\u0430\u0441\u0442\u0456\u0448\u0435 \u0437\u0430\u043f\u0438\u0442\u0443\u0432\u0430\u0442\u0438: \u00ab\u042f\u043a \u0442\u0438 \u0441\u0435\u0431\u0435 \u043f\u043e\u0447\u0443\u0432\u0430\u0454\u0448?\u00bb \u0456 \u043f\u0440\u043e\u0441\u0442\u043e \u0441\u043b\u0443\u0445\u0430\u0442\u0438.",bg:"#F1EFE8",bc:"#B4B2A9",fc:"#444441"},
+  "low-mid":{e:"\uD83D\uDD0B",t:"\u041c\u0430\u043c\u0430-\u0432 \u0440\u0435\u0436\u0438\u043c\u0456 \u0435\u043d\u0435\u0440\u0433\u043e\u0437\u0431\u0435\u0440\u0435\u0436\u0435\u043d\u043d\u044f",d:"\u0421\u0445\u043e\u0436\u0435, \u0442\u0438 \u0437\u0430\u0440\u0430\u0437 \u0432 \u0440\u0435\u0441\u0443\u0440\u0441\u0456, \u0449\u043e \u043f\u043e\u0442\u0440\u0435\u0431\u0443\u0454 \u043f\u043e\u043f\u043e\u0432\u043d\u0435\u043d\u043d\u044f. \u0426\u0435 \u043d\u0435 \u0442\u0432\u043e\u044f \u043f\u0440\u043e\u0432\u0438\u043d\u0430 \u2014 \u0446\u0435 \u0441\u0438\u0433\u043d\u0430\u043b.",tip:"\uD83D\uDCA1 \u0421\u043f\u043e\u0447\u0430\u0442\u043a\u0443 \u043c\u0430\u0441\u043a\u0430 \u043d\u0430 \u0441\u0435\u0431\u0435. \u0429\u043e \u0442\u0438 \u043c\u043e\u0436\u0435\u0448 \u0437\u0440\u043e\u0431\u0438\u0442\u0438 \u0434\u043b\u044f \u0441\u0435\u0431\u0435 \u0432\u0436\u0435 \u0441\u044c\u043e\u0433\u043e\u0434\u043d\u0456?",bg:"#FAECE7",bc:"#F0997B",fc:"#712B13"},
+  "low-high":{e:"\uD83C\uDF96\uFE0F",t:"\u041c\u0430\u043c\u0430-\u0433\u0435\u043d\u0435\u0440\u0430\u043b",d:"\u0422\u0438 \u0441\u0435\u0440\u0439\u043e\u0437\u043d\u0430, \u0432\u0438\u043c\u043e\u0433\u043b\u0438\u0432\u0430 \u0456 \u0447\u0456\u0442\u043a\u0456\u0448\u0430 \u0437\u0430 \u0456\u043d\u0448\u0438\u0445. \u0414\u0438\u0441\u0446\u0438\u043f\u043b\u0456\u043d\u0430 \u2014 \u0446\u0435 \u0434\u043e\u0431\u0440\u0435, \u0430\u043b\u0435 \u0434\u0438\u0442\u0438\u043d\u0430 \u043c\u043e\u0436\u0435 \u0432\u0456\u0434\u0447\u0443\u0432\u0430\u0442\u0438 \u0431\u0440\u0430\u043a \u0442\u0435\u043f\u043b\u0430.",tip:"\uD83D\uDCA1 \u0421\u043f\u0440\u043e\u0431\u0443\u0439 \u0437\u0430\u0432\u0442\u0440\u0430 \u0441\u043a\u0430\u0437\u0430\u0442\u0438 \u0434\u0438\u0442\u0438\u043d\u0456: \u00ab\u042f \u0440\u0430\u0434\u0430, \u0449\u043e \u0442\u0438 \u0454\u00bb. \u0426\u0435 \u043c\u0430\u043b\u0435\u043d\u044c\u043a\u0438\u0439 \u043a\u0440\u043e\u043a, \u044f\u043a\u0438\u0439 \u0437\u043c\u0456\u043d\u044e\u0454 \u0431\u0430\u0433\u0430\u0442\u043e.",bg:"#FCEBEB",bc:"#F09595",fc:"#791F1F"}
+};
+
+var ans=new Array(20).fill(null), cur=0;
+
+function getLevel(s){ return s<=30?"low":s<=39?"mid":"high"; }
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function renderQ(){
+  var q=Qs[cur];
+  document.getElementById('q-counter').textContent='\u0417\u0430\u043f\u0438\u0442\u0430\u043d\u043d\u044f '+(cur+1)+' \u0437 20';
+  document.getElementById('block-ind').textContent=q.b==='care'?'\u0411\u043b\u043e\u043a 1':'\u0411\u043b\u043e\u043a 2';
+  document.getElementById('pfill').style.width=Math.round(((cur+1)/20)*100)+'%';
+  var bl=document.getElementById('blabel');
+  bl.className='block-label '+(q.b==='care'?'label-care':'label-control');
+  bl.textContent=q.b==='care'?'\u0422\u0443\u0440\u0431\u043e\u0442\u0430':'\u041a\u043e\u043d\u0442\u0440\u043e\u043b\u044c';
+  document.getElementById('qtext').textContent=q.t;
+  var grid=document.getElementById('opts');
+  grid.innerHTML='';
+  for(var i=1;i<=5;i++){
+    (function(v){
+      var b=document.createElement('button');
+      b.className='opt'+(ans[cur]===v?' sel':'');
+      b.innerHTML='<span class="opt-num">'+v+'</span><span class="opt-lbl">'+SL[v-1]+'</span>';
+      b.onclick=function(){ selectAns(v); };
+      grid.appendChild(b);
+    })(i);
+  }
+  document.getElementById('bprev').style.visibility=cur===0?'hidden':'visible';
+  document.getElementById('bnext').disabled=ans[cur]===null;
+}
+
+function selectAns(v){
+  ans[cur]=v;
+  document.querySelectorAll('.opt').forEach(function(b,i){ b.classList.toggle('sel',i+1===v); });
+  document.getElementById('bnext').disabled=false;
+}
+
+function showResult(){
+  var cs=ans.slice(0,10).reduce(function(a,b){return a+(b||0);},0);
+  var ks=ans.slice(10,20).reduce(function(a,b){return a+(b||0);},0);
+  var key=getLevel(cs)+'-'+getLevel(ks);
+  var r=R[key]||R['mid-mid'];
+  var card=document.getElementById('rcard');
+  card.style.background=r.bg; card.style.borderColor=r.bc; card.style.color=r.fc;
+  document.getElementById('remoji').textContent=r.e;
+  document.getElementById('rtitle').textContent=r.t;
+  document.getElementById('rdesc').textContent=r.d;
+  var clN=getLevel(cs)==='low'?'\u041d\u0438\u0437\u044c\u043a\u0430':getLevel(cs)==='mid'?'\u041f\u043e\u043c\u0456\u0440\u043d\u0430':'\u0412\u0438\u0441\u043e\u043a\u0430';
+  var klN=getLevel(ks)==='low'?'\u041d\u0438\u0437\u044c\u043a\u0438\u0439':getLevel(ks)==='mid'?'\u041f\u043e\u043c\u0456\u0440\u043d\u0438\u0439':'\u0412\u0438\u0441\u043e\u043a\u0438\u0439';
+  document.getElementById('sc1').textContent='\u0422\u0443\u0440\u0431\u043e\u0442\u0430: '+cs+' \u2014 '+clN;
+  document.getElementById('sc2').textContent='\u041a\u043e\u043d\u0442\u0440\u043e\u043b\u044c: '+ks+' \u2014 '+klN;
+  document.getElementById('rtip').textContent=r.tip;
+  document.getElementById('rtip').style.color=r.fc;
+  show('s-result');
+}
+
+document.getElementById('btn-start').onclick=function(){
+  ans=new Array(20).fill(null); cur=0;
+  renderQ(); show('s-question');
+};
+document.getElementById('bnext').onclick=function(){
+  if(ans[cur]===null) return;
+  if(cur===9){ show('s-trans'); return; }
+  if(cur>=19){ showResult(); return; }
+  cur++; renderQ();
+};
+document.getElementById('bprev').onclick=function(){
+  if(cur===10){ show('s-trans'); return; }
+  if(cur>0){ cur--; renderQ(); }
+};
+document.getElementById('btn-cont').onclick=function(){ cur=10; renderQ(); show('s-question'); };
+document.getElementById('btn-retry').onclick=function(){
+  ans=new Array(20).fill(null); cur=0; show('s-intro');
+};
+</script>
+</body>
+</html>
